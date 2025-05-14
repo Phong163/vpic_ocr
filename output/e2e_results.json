@@ -1,0 +1,32 @@
+[
+  {
+    "image_path": "output\\temp_crop_0.jpg",
+    "boxes": [
+      {
+        "box": [
+          [
+            31,
+            41
+          ],
+          [
+            71,
+            6
+          ],
+          [
+            94,
+            54
+          ],
+          [
+            53,
+            89
+          ]
+        ],
+        "crop_path": "output\\det_results\\crop_straight_0.jpg",
+        "text": {
+          "label": "15",
+          "score": 0.6984431743621826
+        }
+      }
+    ]
+  }
+]
