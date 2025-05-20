@@ -96,10 +96,7 @@ class OCRProcessor:
             boxes = post_result[0]["points"]
 
         if not len(boxes):
-            print("Không phát hiện box nào")
             return None
-
-        
         best_box = boxes[0]
         cropped_img = crop_and_straighten_image(image, best_box)
         return cropped_img
@@ -110,14 +107,14 @@ class OCRProcessor:
 
         # Kiểm tra xem cropped_imgs có hợp lệ không
         if cropped_imgs is None or not isinstance(cropped_imgs, np.ndarray) or cropped_imgs.size == 0:
-            logger.error("Hình ảnh đầu vào không hợp lệ hoặc rỗng trong recognize_text")
+            logger.error("Hinh anh dau vao khong hop le hoac rong trong recognize_text")
             return [{"text": None}]
 
         # Chuyển đổi hình ảnh sang bytes
         try:
             _, img_data = cv2.imencode('.png', cropped_imgs)
         except cv2.error as e:
-            logger.error(f"Lỗi khi mã hóa hình ảnh: {e}")
+            logger.error(f"Loi khi ma hoa hinh anh: {e}")
             return [{"text": None}]
 
         data = {"image": img_data.tobytes()}
