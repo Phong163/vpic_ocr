@@ -1,28 +1,12 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+import logging
 import os
 import sys
 import cv2
 import numpy as np
-import json
 import yaml
 import onnxruntime as ort
 from ppocr.data import create_operators, transform
 from ppocr.postprocess import build_post_process
-from ppocr.utils.logging import get_logger
-from tools.infer.utility import get_rotate_crop_image
 
 # Add PaddleOCR to system path
 __dir__ = os.path.dirname(os.path.abspath(__file__))
@@ -30,45 +14,7 @@ sys.path.append(__dir__)
 sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "..")))
 
 # Setup logging
-logger = get_logger()
-import numpy as np
-import cv2
-import numpy as np
-import cv2
-
-def calculate_iou(box1, box2):
-    """Tính IoU giữa hai box (dạng tọa độ 4 điểm)."""
-    # Chuyển box thành dạng [x_min, y_min, x_max, y_max]
-    x1_min, y1_min = np.min(box1, axis=0)
-    x1_max, y1_max = np.max(box1, axis=0)
-    x2_min, y2_min = np.min(box2, axis=0)
-    x2_max, y2_max = np.max(box2, axis=0)
-
-    # Tính diện tích giao nhau
-    inter_x_min = max(x1_min, x2_min)
-    inter_y_min = max(y1_min, y2_min)
-    inter_x_max = min(x1_max, x2_max)
-    inter_y_max = min(y1_max, y2_max)
-
-    inter_area = max(0, inter_x_max - inter_x_min) * max(0, inter_y_max - inter_y_min)
-
-    # Tính diện tích hợp
-    area1 = (x1_max - x1_min) * (y1_max - y1_min)
-    area2 = (x2_max - x2_min) * (y2_max - y2_min)
-    union_area = area1 + area2 - inter_area
-
-    return inter_area / union_area if union_area > 0 else 0
-
-def is_box_inside(box_small, box_large, threshold=0.9):
-    """Kiểm tra nếu box_small nằm trong box_large (dựa trên diện tích giao nhau)."""
-    iou = calculate_iou(box_small, box_large)
-    # Tính diện tích box_small
-    area_small = np.abs((np.max(box_small, axis=0)[0] - np.min(box_small, axis=0)[0]) *
-                        (np.max(box_small, axis=0)[1] - np.min(box_small, axis=0)[1]))
-    # Tính diện tích giao nhau
-    inter_area = iou * area_small / (1 - iou + 1e-10)  # Tránh chia cho 0
-    # Nếu diện tích giao nhau chiếm hơn threshold của box_small, coi là box_small nằm trong box_large
-    return inter_area / area_small > threshold if area_small > 0 else False
+logger = logging.getLogger('Number_recognition')
 
 class OCRProcessor:
     def __init__(self, det_config_path, det_onnx_path, rec_config_path, rec_onnx_path):
@@ -129,8 +75,8 @@ class OCRProcessor:
         if image is None:
             print("Ảnh đầu vào không hợp lệ")
             return None, None
-
-        # Convert image to bytes for processing
+        image = cv2.resize(image, (960, 736))  # Thay 960x960 bằng kích thước mong muốn
+        # Convert image to bytes for process    ing
         _, img_data = cv2.imencode('.png', image)
         data = {"image": img_data.tobytes()}
         batch = transform(data, self.det_ops)
@@ -153,97 +99,101 @@ class OCRProcessor:
             print("Không phát hiện box nào")
             return None
 
-        # Nếu chỉ có 1 box, trả về ngay
-        if len(boxes) == 1:
-            box = boxes[0]
-            cropped_img = crop_and_straighten_image(image, box)
-            return cropped_img
-
-        # Xử lý nhiều box: lọc box trùng và box nhỏ trong box lớn
-        filtered_boxes = []
-        iou_threshold = 0.3  # Ngưỡng IoU để coi là trùng
-        inside_threshold = 0.6  # Ngưỡng để coi box nhỏ nằm trong box lớn
-
-        # Tính diện tích của từng box để ưu tiên box lớn
-        areas = [np.abs((np.max(box, axis=0)[0] - np.min(box, axis=0)[0]) *
-                        (np.max(box, axis=0)[1] - np.min(box, axis=0)[1])) for box in boxes]
-
-        # Sắp xếp box theo diện tích giảm dần
-        sorted_indices = np.argsort(areas)[::-1]
-        boxes = [boxes[i] for i in sorted_indices]
-
-        used = [False] * len(boxes)
-        for i, box1 in enumerate(boxes):
-            if used[i]:
-                continue
-            keep = True
-            for j, box2 in enumerate(boxes):
-                if i == j or used[j]:
-                    continue
-                iou = calculate_iou(box1, box2)
-                if iou > iou_threshold:
-                    # Nếu box trùng, ưu tiên giữ box lớn hơn (đã sắp xếp theo diện tích)
-                    keep = False
-                    break
-                if is_box_inside(box2, box1, inside_threshold):
-                    # Nếu box2 nằm trong box1, bỏ box2
-                    used[j] = True
-            if keep:
-                filtered_boxes.append(box1)
-                used[i] = True
-
-        if not filtered_boxes:
-            print("Không có box nào hợp lệ sau khi lọc")
-            return None
-
-        # Chọn box tốt nhất (lớn nhất sau khi lọc)
-        best_box = filtered_boxes[0]
-        # print(f"Chọn box tốt nhất trong {len(boxes)} box, còn {len(filtered_boxes)} box sau lọc")
+        
+        best_box = boxes[0]
         cropped_img = crop_and_straighten_image(image, best_box)
-
         return cropped_img
-
+    
     def recognize_text(self, cropped_imgs):
-        """Nhận diện văn bản trên các ảnh đã crop, sử dụng mô hình ONNX đã tải sẵn."""
+        """Nhận diện văn bản trên ảnh đã crop, sử dụng mô hình ONNX đã tải sẵn."""
         rec_results = []
-        for img in cropped_imgs:
-            if img is None:
-                rec_results.append({"text": None})
-                continue
-            # Convert image to bytes
-            _, img_data = cv2.imencode('.png', img)
-            data = {"image": img_data.tobytes()}
-            batch = transform(data, self.rec_ops)
-            
-            # Prepare for ONNX model
-            images = np.expand_dims(batch[0], axis=0).astype(np.float32)
-            
-            # Run recognition with ONNX
-            preds = self.rec_session.run([self.rec_output_name], {self.rec_input_name: images})[0]
-            post_result = self.rec_post_process([preds])
-            
-            # Process recognition result
-            info = None
-            if isinstance(post_result, dict):
-                rec_info = {}
-                for key in post_result:
-                    if len(post_result[key][0]) >= 2:
-                        rec_info[key] = {
-                            "label": post_result[key][0][0],
-                            "score": float(post_result[key][0][1]),
-                        }
-                info = rec_info
-            elif isinstance(post_result, list) and isinstance(post_result[0], int):
-                info = {"label": str(post_result[0]), "score": 1.0}
-            else:
-                if len(post_result[0]) >= 2:
-                    info = {"label": post_result[0][0], "score": float(post_result[0][1])}
-            
-            if info:
-                rec_results.append({"text": info})
-            else:
-                rec_results.append({"text": None})
+
+        # Kiểm tra xem cropped_imgs có hợp lệ không
+        if cropped_imgs is None or not isinstance(cropped_imgs, np.ndarray) or cropped_imgs.size == 0:
+            logger.error("Hình ảnh đầu vào không hợp lệ hoặc rỗng trong recognize_text")
+            return [{"text": None}]
+
+        # Chuyển đổi hình ảnh sang bytes
+        try:
+            _, img_data = cv2.imencode('.png', cropped_imgs)
+        except cv2.error as e:
+            logger.error(f"Lỗi khi mã hóa hình ảnh: {e}")
+            return [{"text": None}]
+
+        data = {"image": img_data.tobytes()}
+        batch = transform(data, self.rec_ops)
+        
+        # Chuẩn bị cho mô hình ONNX
+        images = np.expand_dims(batch[0], axis=0).astype(np.float32)
+        
+        # Chạy nhận diện với ONNX
+        preds = self.rec_session.run([self.rec_output_name], {self.rec_input_name: images})[0]
+        post_result = self.rec_post_process([preds])
+        
+        # Xử lý kết quả nhận diện
+        info = None
+        if isinstance(post_result, dict):
+            rec_info = {}
+            for key in post_result:
+                if len(post_result[key][0]) >= 2:
+                    rec_info[key] = {
+                        "label": post_result[key][0][0],
+                        "score": float(post_result[key][0][1]),
+                    }
+            info = rec_info
+        elif isinstance(post_result, list) and isinstance(post_result[0], int):
+            info = {"label": str(post_result[0]), "score": 1.0}
+        else:
+            if len(post_result[0]) >= 2:
+                info = {"label": post_result[0][0], "score": float(post_result[0][1])}
+        if info:
+            rec_results.append({"text": info})
+        else:
+            rec_results.append({"text": None})
+
         return rec_results
+
+def get_rotate_crop_image(img, points):
+    assert len(points) == 4, "shape of points must be 4*2"
+    
+    # Tính kích thước ảnh cắt dựa trên các điểm
+    img_crop_width = int(
+        max(
+            np.linalg.norm(points[0] - points[1]), np.linalg.norm(points[2] - points[3])
+        )
+    )
+    img_crop_height = int(
+        max(
+            np.linalg.norm(points[0] - points[3]), np.linalg.norm(points[1] - points[2])
+        )
+    )
+    
+    # Định nghĩa các điểm chuẩn
+    pts_std = np.float32(
+        [
+            [0, 0],
+            [img_crop_width, 0],
+            [img_crop_width, img_crop_height],
+            [0, img_crop_height],
+        ]
+    )
+    
+    # Tạo ma trận biến đổi perspective
+    M = cv2.getPerspectiveTransform(points, pts_std)
+    dst_img = cv2.warpPerspective(
+        img,
+        M,
+        (img_crop_width, img_crop_height),
+        borderMode=cv2.BORDER_REPLICATE,
+        flags=cv2.INTER_CUBIC,
+    )
+    
+    # Xoay ảnh 30 độ quanh tâm
+    center = (img_crop_width // 2, img_crop_height // 2)
+    rotation_matrix = cv2.getRotationMatrix2D(center, 1, 1.0)
+    dst_img = cv2.warpAffine(dst_img, rotation_matrix, (img_crop_width, img_crop_height))
+    
+    return dst_img
 
 def crop_and_straighten_image(img, box):
     """Crop image using box and straighten it to horizontal."""
@@ -257,4 +207,5 @@ def draw_det_res(dt_boxes, img):
         box = np.array(box).astype(np.int32).reshape((-1, 1, 2))
         cv2.polylines(src_im, [box], True, color=(255, 255, 0), thickness=2)
     return src_im
+
 

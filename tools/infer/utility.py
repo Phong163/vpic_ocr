@@ -691,6 +691,8 @@ def draw_boxes(image, boxes, scores=None, drop_score=0.5):
         image = cv2.polylines(np.array(image), [box], True, (255, 0, 0), 2)
     return image
 
+import cv2
+import numpy as np
 
 def get_rotate_crop_image(img, points):
     """

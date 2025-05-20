@@ -1,0 +1,20 @@
+2025-05-20 09:24:22,746 - Number_recognition - DEBUG - Detection tensor shape: (1, 3, 736, 960), dtype: float32
+2025-05-20 09:24:24,012 - Number_recognition - DEBUG - Config height: 32, max_width: 100
+2025-05-20 09:24:24,013 - Number_recognition - DEBUG - Original image shape for recognition: (39, 76)
+2025-05-20 09:24:24,013 - Number_recognition - DEBUG - Resized dimensions: (32, 62)
+2025-05-20 09:24:24,014 - Number_recognition - DEBUG - Shape after resize: (32, 62, 3)
+2025-05-20 09:24:24,014 - Number_recognition - DEBUG - Padded image shape: (32, 100, 3)
+2025-05-20 09:24:24,015 - Number_recognition - DEBUG - Shape after transpose: (3, 32, 100)
+2025-05-20 09:24:24,015 - Number_recognition - DEBUG - Final tensor shape for recognition: (1, 3, 32, 100)
+2025-05-20 09:24:24,016 - Number_recognition - DEBUG - Recognition tensor shape: (1, 3, 32, 100), dtype: float32
+2025-05-20 09:24:24,022 - Number_recognition - WARNING - Number 180 may be incorrect at state 1 
+2025-05-20 09:24:24,229 - Number_recognition - DEBUG - Detection tensor shape: (1, 3, 736, 960), dtype: float32
+2025-05-20 09:24:25,226 - Number_recognition - DEBUG - Config height: 32, max_width: 100
+2025-05-20 09:24:25,227 - Number_recognition - DEBUG - Original image shape for recognition: (40, 71)
+2025-05-20 09:24:25,228 - Number_recognition - DEBUG - Resized dimensions: (32, 56)
+2025-05-20 09:24:25,229 - Number_recognition - DEBUG - Shape after resize: (32, 56, 3)
+2025-05-20 09:24:25,230 - Number_recognition - DEBUG - Padded image shape: (32, 100, 3)
+2025-05-20 09:24:25,231 - Number_recognition - DEBUG - Shape after transpose: (3, 32, 100)
+2025-05-20 09:24:25,232 - Number_recognition - DEBUG - Final tensor shape for recognition: (1, 3, 32, 100)
+2025-05-20 09:24:25,235 - Number_recognition - DEBUG - Recognition tensor shape: (1, 3, 32, 100), dtype: float32
+2025-05-20 09:24:25,245 - Number_recognition - WARNING - Number 455 may be incorrect at state 1 
