@@ -76,9 +76,9 @@ class OCRProcessor:
 
         # Process detection results
         boxes = post_result.get(list(post_result.keys())[0], [{}])[0].get("points", []) if isinstance(post_result, dict) else post_result[0]["points"]
-        if not boxes:
+        if len(boxes)==0:
             logger.warning("No text boxes detected")
-            return None
+            return image
 
         return crop_and_straighten_image(image, boxes[0])
 

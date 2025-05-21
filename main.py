@@ -153,8 +153,8 @@ try:
             if is_crossing_1 and not track_text[track_id]["stopped"]:
                 cropped_img = crop_license_plate(frame, number_box)
                 cropped_img = ocr_processor.detect_text(cropped_img)
-                rec_results = ocr_processor.recognize_text(cropped_img
-                                                           )
+                rec_results = ocr_processor.recognize_text(cropped_img)
+                
                 if rec_results and rec_results[0]["text"] and rec_results[0]["text"].get("label"):
                     text = rec_results[0]["text"]["label"] 
                     track_text[track_id]["text"] = text

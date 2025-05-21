@@ -10,3 +10,4 @@ shapely
 pyclipper
 scikit-image
 lmdb
+albumentations
