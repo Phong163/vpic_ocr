@@ -1,3 +1,3 @@
-conda create -n vpic_ocr python=3.12.7
-conda activate vpic_ocr
-conda install --file requirements.txt
+Run:
+1. docker build -t vpic_docker .
+2. dorcker run vpic_docker
