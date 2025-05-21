@@ -1,16 +1,15 @@
 import time
-
 import torch
 import numpy as np
 import onnxruntime as ort
-import cv2
 from tracker.tracker import BYTETracker
 from utils import *
 from config.params import *
 import os
 import argparse
 from rstp_stream import RTSPStream
-from e2e2 import OCRProcessor  
+from ocr import OCRProcessor  
+import cv2
 
 # Thiết lập logging
 logger = setup_logger()
@@ -38,6 +37,8 @@ def parse_args():
                         help='Path to OCR recognition ONNX model')
     parser.add_argument('--cam_id', type=int, default=0,
                         help='Camera ID for identification')
+    parser.add_argument('--show_video', type = str, default ='off', help ="Show video")
+    parser.add_argument('--save_video', type = str, default ='off', help ="Save video")
     args = parser.parse_args()
 
     # Kiểm tra sự tồn tại của các tệp
@@ -69,7 +70,8 @@ rec_onnx_path = args.rec_onnx_path
 cam_id = args.cam_id
 
 # Load YOLO
-yolo_session = ort.InferenceSession(yolo_weights)
+yolo_session = ort.InferenceSession(args.yolo_weights)
+logger.info(f"Provider for YOLO ONNX Runtime : {yolo_session.get_providers()}")
 input_name = yolo_session.get_inputs()[0].name
 output_name = yolo_session.get_outputs()[0].name
 
@@ -83,18 +85,21 @@ rtsp_stream.start()
 # Khởi tạo Tracker
 tracker = BYTETracker(track_thresh=0.5, match_thresh=0.8, track_buffer=50, frame_rate=15)
 
+if args.save_video.lower() == 'on':
+    frame_size = (1280, 640)
+    video_writer = init_video_writer(args.output_video_path, frame_size, fps=15.0)
+    if video_writer is None:
+        logger.warning("Video cannot be initilized.")
+        args.save_video = 'off'
+
 def detect_yolo(frame):
-    """Hàm phát hiện biển số bằng YOLOv5"""
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     frame_tensor = torch.from_numpy(frame_rgb).float() / 255.0
-    frame_tensor = frame_tensor.permute(2, 0, 1).unsqueeze(0)  # (1, C, H, W)
-    frame_tensor = frame_tensor.to(device)
-
-    input_tensor = frame_tensor.cpu().numpy()
+    frame_tensor = frame_tensor.permute(2, 0, 1).unsqueeze(0)
+    input_tensor = frame_tensor.cpu().numpy()  # ONNX yêu cầu đầu vào CPU
     detected = yolo_session.run(None, {input_name: input_tensor})[0]
     detected = torch.from_numpy(detected).to(device)
-    detected = non_max_suppression(detected, conf_thres, iou_thres, max_det=max_det)
-    return detected
+    return non_max_suppression(detected, conf_thres, iou_thres, max_det=max_det)
 
 prev_time = time.time()
 try:
@@ -114,11 +119,18 @@ try:
         if pred is not None and len(pred):
             for det in pred[0]:
                 x_min, y_min, x_max, y_max, conf, cls = det[:6]
+                # Chuyển các giá trị về CPU và scalar
+                x_min = x_min.cpu().item() if torch.is_tensor(x_min) else x_min
+                y_min = y_min.cpu().item() if torch.is_tensor(y_min) else y_min
+                x_max = x_max.cpu().item() if torch.is_tensor(x_max) else x_max
+                y_max = y_max.cpu().item() if torch.is_tensor(y_max) else y_max
                 x_min_rescaled, y_min_rescaled, x_max_rescaled, y_max_rescaled = rescale(
                     frame, img_size, x_min, y_min, x_max, y_max
                 )
                 tlbr = [x_min_rescaled, y_min_rescaled, x_max_rescaled, y_max_rescaled]
-                detections.append([tlbr[0], tlbr[1], tlbr[2], tlbr[3], conf.cpu().numpy(), int(cls.cpu().numpy())])
+                detections.append([tlbr[0], tlbr[1], tlbr[2], tlbr[3], float(conf.cpu().numpy()), int(cls.cpu().numpy())])
+        else:
+            logger.warning("No detections from YOLOv5")
         detections = np.array(detections) if detections else np.empty((0, 6))
         tracks = tracker.update(detections)
         plate_tracks = [t for t in tracks if t.cls == 0]
@@ -141,11 +153,10 @@ try:
             if is_crossing_1 and not track_text[track_id]["stopped"]:
                 cropped_img = crop_license_plate(frame, number_box)
                 cropped_img = ocr_processor.detect_text(cropped_img)
-                rec_results = ocr_processor.recognize_text(cropped_img)
+                rec_results = ocr_processor.recognize_text(cropped_img
+                                                           )
                 if rec_results and rec_results[0]["text"] and rec_results[0]["text"].get("label"):
                     text = rec_results[0]["text"]["label"] 
-                # if rec_results and rec_results[0]["text"] is not None:
-                #     text = rec_results[0]["text"]  # Truy cập trực tiếp chuỗi
                     track_text[track_id]["text"] = text
                     last_plate_number = int(text)
                     stop_flag, N, state, delete_flag = NumberFilter(text, N, state, delete_flag)
@@ -190,8 +201,13 @@ try:
 
         # Hiển thị frame
         frame = cv2.resize(frame, (1280, 640))
+        # Lưu frame vào video nếu save_video là 'on'
+        if args.save_video.lower() == 'on' and video_writer is not None:
+            video_writer.write(frame)
+            
+        if args.show_video == "on":
+            cv2.imshow('Frame', frame)
 
-        cv2.imshow('Frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

@@ -22,3 +22,32 @@
 2025-05-20 17:08:52,721 - Number_recognition - WARNING - Number 20 may be incorrect at state 1 
 2025-05-20 17:10:11,853 - Number_recognition - INFO - Cam 0: Stopped thread.
 2025-05-20 17:10:11,959 - Number_recognition - INFO - Released resources.
+2025-05-21 09:53:50,867 - Number_recognition - DEBUG - Loaded config params for detection: {'mean': [0.485, 0.456, 0.406], 'std': [0.229, 0.224, 0.225]}
+2025-05-21 09:53:51,019 - Number_recognition - DEBUG - Loaded config params for recognition: {'height': 32, 'max_width': 100}
+2025-05-21 09:54:31,194 - Number_recognition - DEBUG - Loaded config params for detection: {'mean': [0.485, 0.456, 0.406], 'std': [0.229, 0.224, 0.225]}
+2025-05-21 09:54:31,324 - Number_recognition - DEBUG - Loaded config params for recognition: {'height': 32, 'max_width': 100}
+2025-05-21 09:57:28,678 - Number_recognition - DEBUG - Detection tensor shape: (1, 3, 736, 960), dtype: float32
+2025-05-21 09:57:29,654 - Number_recognition - DEBUG - Config height: 32, max_width: 100
+2025-05-21 09:57:29,654 - Number_recognition - DEBUG - Original image shape for recognition: (39, 79)
+2025-05-21 09:57:29,655 - Number_recognition - DEBUG - Resized dimensions: (32, 64)
+2025-05-21 09:57:29,655 - Number_recognition - DEBUG - Shape after resize: (32, 64, 3)
+2025-05-21 09:57:29,656 - Number_recognition - DEBUG - Padded image shape: (32, 100, 3)
+2025-05-21 09:57:29,657 - Number_recognition - DEBUG - Shape after transpose: (3, 32, 100)
+2025-05-21 09:57:29,657 - Number_recognition - DEBUG - Final tensor shape for recognition: (1, 3, 32, 100)
+2025-05-21 09:57:29,657 - Number_recognition - DEBUG - Recognition tensor shape: (1, 3, 32, 100), dtype: float32
+2025-05-21 09:57:35,847 - Number_recognition - INFO - Cam 0: Stopped thread.
+2025-05-21 09:57:35,918 - Number_recognition - INFO - Released resources.
+2025-05-21 10:16:22,493 - Number_recognition - INFO - Cam 0: Stopped thread.
+2025-05-21 10:16:22,571 - Number_recognition - INFO - Released resources.
+2025-05-21 10:19:52,445 - Number_recognition - INFO - Cam 0: Stopped thread.
+2025-05-21 10:19:52,500 - Number_recognition - INFO - Released resources.
+2025-05-21 10:22:14,472 - Number_recognition - INFO - Cam 0: Stopped thread.
+2025-05-21 10:22:14,522 - Number_recognition - INFO - Released resources.
+2025-05-21 10:26:50,722 - Number_recognition - INFO - Cam 0: Stopped thread.
+2025-05-21 10:26:50,777 - Number_recognition - INFO - Released resources.
+2025-05-21 10:43:27,463 - Number_recognition - INFO - Cam 0: Stopped thread.
+2025-05-21 10:43:27,541 - Number_recognition - INFO - Released resources.
+2025-05-21 11:02:08,818 - Number_recognition - INFO - Provider for YOLO ONNX Runtime : ['CPUExecutionProvider']
+2025-05-21 11:02:49,089 - Number_recognition - INFO - Provider for YOLO ONNX Runtime : ['CPUExecutionProvider']
+2025-05-21 11:03:43,638 - Number_recognition - INFO - Cam 0: Stopped thread.
+2025-05-21 11:03:43,744 - Number_recognition - INFO - Released resources.

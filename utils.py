@@ -60,6 +60,29 @@ def setup_logger(
     logger.addHandler(file_handler)
     
     return logger
+def init_video_writer(output_path, frame_size, fps=15.0, codec='mp4v'):
+    """
+    Khởi tạo VideoWriter để lưu video.
+    
+    Parameters:
+        output_path: Đường dẫn file video đầu ra (e.g., 'output/output2.mp4').
+        frame_size: Kích thước khung hình (width, height).
+        fps: Số khung hình trên giây (mặc định 15.0).
+        codec: Codec video (mặc định 'mp4v' cho MP4).
+    
+    Returns:
+        VideoWriter object hoặc None nếu thất bại.
+    """
+    try:
+        fourcc = cv2.VideoWriter_fourcc(*codec)
+        out = cv2.VideoWriter(output_path, fourcc, fps, frame_size)
+        if not out.isOpened():
+            logger.error(f"Not found {output_path}")
+            return None
+        return out
+    except Exception as e:
+        logger.error(f"Error when initilized VideoWriter: {e}")
+        return None
 
 def draw_results(frame, plate_tracks, number_tracks, track_text, track_plate, last_plate_number, fps_display, red_line, blue_line, colors):
     """
@@ -358,4 +381,3 @@ def non_max_suppression(
             break  # time limit exceeded
 
     return output
-
