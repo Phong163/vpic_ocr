@@ -9,3 +9,4 @@ paddlepaddle
 shapely
 pyclipper
 scikit-image
+lmdb
