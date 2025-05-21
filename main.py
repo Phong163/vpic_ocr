@@ -70,7 +70,7 @@ rec_onnx_path = args.rec_onnx_path
 cam_id = args.cam_id
 
 # Load YOLO
-yolo_session = ort.InferenceSession(args.yolo_weights)
+yolo_session = ort.InferenceSession(args.yolo_weights, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
 logger.info(f"Provider for YOLO ONNX Runtime : {yolo_session.get_providers()}")
 input_name = yolo_session.get_inputs()[0].name
 output_name = yolo_session.get_outputs()[0].name

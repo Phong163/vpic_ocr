@@ -27,7 +27,7 @@ class OCRProcessor:
         self.rec_global_config = self.rec_config["Global"]
 
         # Initialize detection
-        self.det_session = ort.InferenceSession(det_onnx_path)
+        self.det_session = ort.InferenceSession(det_onnx_path, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         self.det_input_name = self.det_session.get_inputs()[0].name
         self.det_output_name = self.det_session.get_outputs()[0].name
         self.det_post_process = build_post_process(self.det_config["PostProcess"])
@@ -35,7 +35,7 @@ class OCRProcessor:
                                                               keep_keys=["image", "shape"]))
 
         # Initialize recognition
-        self.rec_session = ort.InferenceSession(rec_onnx_path)
+        self.rec_session = ort.InferenceSession(rec_onnx_path, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         self.rec_input_name = self.rec_session.get_inputs()[0].name
         self.rec_output_name = self.rec_session.get_outputs()[0].name
         self.rec_post_process = build_post_process(self.rec_config["PostProcess"], self.rec_global_config)
