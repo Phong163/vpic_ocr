@@ -6,4 +6,4 @@ Setup and run.
 
 if use Docker:
 1. docker build -t vpic_docker .
-2. docker run --gpus all -v $(pwd)/output:/app/output -v $(pwd)/weights:/app/weights -v $(pwd)/config:/app/config vpic_docker
+2. docker run --rm -v ${PWD}/output:/app/output -v ${PWD}/weights:/app/weights -v ${PWD}/config:/app/config --name vpic_container phong163/vpic_paddleocr:latest python main.py --save_video on
